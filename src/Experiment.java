@@ -1,3 +1,5 @@
+import java.util.Random;
+
 /**
  * TODO
  *
@@ -22,6 +24,12 @@ public class Experiment implements Runnable {
     /** The distance between the lines. */
     double distance;
 
+    /** The return value of a hit. */
+    private final int HIT = 1;
+
+    /** The return value of a miss.  */
+    private final int MISS = 0;
+
     /**
      * The constructor for the experiment class.
      * @param id - the unique id of the experiment
@@ -43,6 +51,29 @@ public class Experiment implements Runnable {
      */
     @Override
     public void run() {
+        Random rand = new Random();
+        double theta;
+        double centerPoint;
+        double nearestDistance;
+        double hypot;
+        double opp;
+        int result = 0;
 
+        for (int i = 0; i <numExperiments; i++) {
+            theta = rand.nextDouble() * 180.0;
+            if (theta > 90) {
+                theta = 180 - theta;
+            }
+            centerPoint = rand.nextDouble() * this.distance;
+            nearestDistance = Math.min(distance - centerPoint, centerPoint);
+
+            hypot = length / 2;
+            opp = hypot * Math.sin(Math.toRadians(theta));
+            if (nearestDistance <= opp) {
+                result++;
+            }
+        }
+        queue.send(result);
+        System.out.println("Sending from Thread " + Thread.currentThread().getId());
     }
 }

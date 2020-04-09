@@ -1,5 +1,6 @@
 import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
 
 /**
  * TODO
@@ -32,18 +33,57 @@ public class Buffon {
      * Default Contructor for Buffon.
      */
     public Buffon() {
-        this.in = new Scanner(System.in);
-        queue = new MessageQueue<Integer>();
+        in = new Scanner(System.in);
+        queue = new MessageQueue<>();
     }
 
     /**
      * Starts the experiment.
+     * Prompts the user for input,
+     * runs the experiment,
+     * and prints the results.
      */
     void start() {
         promptUser();
         runExperiment();
-
+        printResult(calculateResult());
     }
+
+    /**
+     * Prints the results of the experiment.
+     *
+     * @param result - The estimate of PI.
+     */
+    void printResult(double result) {
+        System.out.println("The Estimation if Pi is -> " + result);
+    }
+
+    /**
+     * Collects the messages sent from the experiments and calculates the results.
+     */
+    double calculateResult() {
+        // The total number of times an experiment hit.
+        int total_hits = 0;
+        // The total number of times an experiment missed.
+        int total_misses = 0;
+        // A counter to keep track of how long we must listen.
+        int counter = 0;
+        // The receiver of the messages.
+        Integer receiver = 0;
+        // Loop and get results.
+        while (counter < numThreads) {
+            receiver = queue.receive();
+            if (receiver != null) {
+                total_hits += receiver;
+                counter++;
+            }
+        }
+        total_misses = numExperiments - total_hits;
+
+        // Calculate the result
+        return (2 * length * numExperiments) / (distance* total_hits);
+    }
+    
 
     /**
      * Ask the user for input on the number of experiments, the number of threads,
@@ -67,13 +107,27 @@ public class Buffon {
      * Runs the experiment to predict PI using the user specified parameters.
      */
     private void runExperiment() {
+        ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(numThreads);
         for(int i = 0; i < numThreads; i++) {
-            Thread worker = new Thread(new Experiment(i,numExperiments/numThreads, length, distance,queue));
-            worker.start();
+            if (i == 0) {
+                pool.execute(new Experiment(i,numExperiments/numThreads + divisible(), length, distance, queue));
+            } else {
+                pool.execute(new Experiment(i, numExperiments / numThreads, length, distance, queue));
+            }
         }
+        pool.shutdown();
+    }
 
-        // Fill in last thread here
-        // TODO
+    /**
+     * TODO
+     * @return
+     */
+    int divisible() {
+        int remainder = 0;
+        if(numExperiments % numThreads != 0){
+            remainder = numExperiments % numThreads;
+        }
+        return remainder;
     }
 
     /**
