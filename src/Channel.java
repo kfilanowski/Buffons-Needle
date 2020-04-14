@@ -10,12 +10,14 @@ public interface Channel<T> {
     /**
      * Send data.
      * @param data The data to send.
+     * @throws InterruptedException Thrown when the thread is interrupted.
      */
-    void send(T data);
+    void send(T data) throws InterruptedException;
 
     /**
      * Receive Data.
      * @return The data to receive.
+     * @throws InterruptedException Thrown when the thread is interrupted.
      */
-    T receive();
+    T receive() throws InterruptedException;
 }

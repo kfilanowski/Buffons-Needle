@@ -1,7 +1,10 @@
 import java.util.Random;
 
 /**
- * TODO
+ * This is the Experiment class. This is the runnable class that our threads will
+ * run when they are started. This class calculates whether a needle drop is
+ * a miss or a hit. Once all of the calculations are complete it will send back
+ * the total number of hits.
  *
  * @author Jacob Ginn
  * @author Kevin Filanowski
@@ -24,11 +27,8 @@ public class Experiment implements Runnable {
     /** The distance between the lines. */
     double distance;
 
-    /** The return value of a hit. */
-    private final int HIT = 1;
-
-    /** The return value of a miss.  */
-    private final int MISS = 0;
+    /** DEBUG VARIABLE FOR DR. K */
+    private final boolean DEBUG = false;
 
     /**
      * The constructor for the experiment class.
@@ -37,7 +37,8 @@ public class Experiment implements Runnable {
      * @param length - The length of a needle.
      * @param distance - The distance between the lines.
      */
-    public Experiment(int id, int numExperiments, double length, double distance, Channel<Integer> queue) {
+    public Experiment(int id, int numExperiments, double length,
+                      double distance, Channel<Integer> queue) {
         this.id = id;
         this.numExperiments = numExperiments;
         this.length = length;
@@ -45,9 +46,10 @@ public class Experiment implements Runnable {
         this.queue = queue;
     }
 
-
     /**
-     *
+     * The run method of our Runnable Object that each thread will run.
+     * This will calculate if the needle that is dropped is a hit or a miss.
+     * it will return the number of hits that it gets.
      */
     @Override
     public void run() {
@@ -59,7 +61,7 @@ public class Experiment implements Runnable {
         double opp;
         int result = 0;
 
-        for (int i = 0; i <numExperiments; i++) {
+        for (int i = 0; i < numExperiments; i++) {
             theta = rand.nextDouble() * 180.0;
             if (theta > 90) {
                 theta = 180 - theta;
@@ -71,9 +73,17 @@ public class Experiment implements Runnable {
             opp = hypot * Math.sin(Math.toRadians(theta));
             if (nearestDistance <= opp) {
                 result++;
+                if (DEBUG)
+                    System.out.println("DEBUG --> Thread : " + Thread.currentThread().getId() + " got a hit!");
             }
         }
-        queue.send(result);
-        System.out.println("Sending from Thread " + Thread.currentThread().getId());
+        try {
+            queue.send(result);
+            if (DEBUG)
+                System.out.println("DEBUG --> Thread : " + Thread.currentThread().getId() + " is sending this number of hits: " + result);
+        } catch (InterruptedException e) {
+            System.out.println("Thread : "+ Thread.currentThread().getId() + " Cannot send data!");
+            System.exit(1);
+        }
     }
 }

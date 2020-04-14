@@ -1,9 +1,10 @@
-import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 
 /**
- * TODO
+ * This is the Buffon class. This class starts a thread pool that is the length of
+ * how many threads that the user wanted. This starts a thread and gives it a
+ * good share of the work which is the number of needles the user wanted.
  *
  * @author Jacob Ginn
  * @author Kevin Filanowski
@@ -30,7 +31,7 @@ public class Buffon {
     double distance;
 
     /**
-     * Default Contructor for Buffon.
+     * Default Constructor for Buffon.
      */
     public Buffon() {
         in = new Scanner(System.in);
@@ -43,7 +44,7 @@ public class Buffon {
      * runs the experiment,
      * and prints the results.
      */
-    void start() {
+    void start() throws InterruptedException {
         promptUser();
         runExperiment();
         printResult(calculateResult());
@@ -61,11 +62,9 @@ public class Buffon {
     /**
      * Collects the messages sent from the experiments and calculates the results.
      */
-    double calculateResult() {
+    double calculateResult() throws InterruptedException {
         // The total number of times an experiment hit.
         int total_hits = 0;
-        // The total number of times an experiment missed.
-        int total_misses = 0;
         // A counter to keep track of how long we must listen.
         int counter = 0;
         // The receiver of the messages.
@@ -78,29 +77,39 @@ public class Buffon {
                 counter++;
             }
         }
-        total_misses = numExperiments - total_hits;
 
         // Calculate the result
-        return (2 * length * numExperiments) / (distance* total_hits);
+        return (2 * length * numExperiments) / (distance * total_hits);
     }
-    
 
     /**
      * Ask the user for input on the number of experiments, the number of threads,
      * the length of each needle and the distance between the lines.
      */
     void promptUser() {
-        numExperiments = getIntFromUser("How many experiments would you like to run? -> ", "Please enter an integer for the number of experiments -> ");
-        numThreads = getIntFromUser("How many threads would you like to have? -> ", "Please enter an integer for the number of threads -> ");
-        length = getDoubleFromUser("Enter the length of each needle -> ", "Please enter an integer for the length of each needle -> ");
-
+        distance = getDoubleFromUser("Please enter the distance between lines -> ",
+                "Please enter a positive integer for the distance between the lines -> ");
         // Check to make sure the distance is greater than the length of the needle.
         do {
-            distance = getDoubleFromUser("Enter the distance between the lines -> ", "Please enter an integer for the distance between the lines -> ");
+            length = getDoubleFromUser("Enter the length of each needle -> ",
+                    "Please enter a positive integer for the length of each needle -> ");
             if (distance <= length) {
-                System.out.println("Please make sure the distance is greater than " + length + ", the length of the needle.");
+                System.err.println("Please make sure the length of the needle is less than "
+                        + distance + ", the distance between lines.");
             }
+
         } while (distance <= length);
+
+        numExperiments = getIntFromUser("How many needles to drop overall? > ",
+                "Please enter a positive integer for the number of experiments > ");
+        do {
+            numThreads = getIntFromUser("How many threads? > ",
+                    "Please enter a positive integer for the number of threads > ");
+            if (numExperiments < numThreads) {
+                System.err.println("Please make sure the number of threads is less than "
+                        + numExperiments + ", the number of needles to drop.");
+            }
+        } while (numExperiments < numThreads);
     }
 
     /**
@@ -108,9 +117,9 @@ public class Buffon {
      */
     private void runExperiment() {
         ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(numThreads);
-        for(int i = 0; i < numThreads; i++) {
+        for (int i = 0; i < numThreads; i++) {
             if (i == 0) {
-                pool.execute(new Experiment(i,numExperiments/numThreads + divisible(), length, distance, queue));
+                pool.execute(new Experiment(i, numExperiments / numThreads + divisible(), length, distance, queue));
             } else {
                 pool.execute(new Experiment(i, numExperiments / numThreads, length, distance, queue));
             }
@@ -119,45 +128,64 @@ public class Buffon {
     }
 
     /**
-     * TODO
-     * @return
+     * Determines if the number of experiments is divisible by the number of threads.
+     * If there is a remainder it will add the rest to the first thread that is executed.
+     * We decided this because since it is the first thread executed it would have more
+     * time than other threads.
+     *
+     * @return The remainder of the numExperiments/numthreads
      */
     int divisible() {
-        int remainder = 0;
-        if(numExperiments % numThreads != 0){
-            remainder = numExperiments % numThreads;
-        }
-        return remainder;
+        return numExperiments % numThreads;
     }
 
     /**
-     * @param prompt
-     * @param error
-     * @return
+     * Prompts the user for an integer. If the user enters something that is not an integer
+     * it will ask the user again.
+     * @param prompt - The prompt message to the user
+     * @param error - The error message that is displayed if the user inputs
+     *                an invalid value.
+     * @return - The int that the user inputs
      */
     int getIntFromUser(String prompt, String error) {
         System.out.print(prompt);
-        while (!in.hasNextInt()) {
-            System.out.print(error);
-            in.next();
-        }
-        return in.nextInt();
+        int answer;
+        do {
+            while (!in.hasNextInt()) {
+                System.err.print(error);
+                in.next();
+            }
+            answer = in.nextInt();
+            if (answer <= 0) {
+                System.err.print(error);
+            }
+        } while (answer <= 0);
+        return answer;
     }
 
     /**
-     * @param prompt
-     * @param error
-     * @return
+     * Prompts the user for a double. If the user enters something that is not a double
+     * it will ask the user again.
+     * @param prompt - The prompt message to the user
+     * @param error - The error message that is displayed if the user inputs
+     *                an invalid value.
+     * @return - The double that the user inputs
      */
     double getDoubleFromUser(String prompt, String error) {
         System.out.print(prompt);
-        while (!in.hasNextDouble()) {
-            System.out.print(error);
-            in.next();
-        }
-        return in.nextDouble();
+        double answer;
+        do {
+            while (!in.hasNextDouble()) {
+                System.err.print(error);
+                in.next();
+            }
+            answer = in.nextDouble();
+            if (answer <= 0) {
+                System.err.print(error);
+            }
+        } while (answer <= 0);
+        return answer;
     }
-
 
     /**
      * Main method of the program starts here.
@@ -166,6 +194,10 @@ public class Buffon {
      */
     public static void main(String[] args) {
         Buffon bf = new Buffon();
-        bf.start();
+        try {
+            bf.start();
+        } catch (InterruptedException e){
+            System.out.println("Cannot Receive Data!");
+        }
     }
 }
