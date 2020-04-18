@@ -3,6 +3,7 @@ An Operating Systems project.
 
 # Authors
 Kevin Filanowski
+
 Jacob Ginn
 
 # Version
